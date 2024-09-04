@@ -1374,6 +1374,13 @@ const tests = [
         ],
     },
     {
+        category: 'Volitional form of kansai-ben verbs',
+        valid: true,
+        tests: [
+            {term: '食べる', source: '食べまひょ', rule: null, reasons: ['-masu', 'volitional', 'kansai-ben volitional']},
+        ],
+    },
+    {
         category: '-te form of kansai-ben verbs',
         valid: true,
         tests: [

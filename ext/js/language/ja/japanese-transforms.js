@@ -140,6 +140,10 @@ const conditions = {
         name: 'Polite negative -masen ending',
         isDictionaryForm: false,
     },
+    '-mashou': {
+        name: 'Polite volitional -mashou ending',
+        isDictionaryForm: false,
+    },
     '-te': {
         name: 'Intermediate -te endings for progressive or perfect tense',
         isDictionaryForm: false,
@@ -1286,7 +1290,7 @@ export const japaneseTransforms = {
                 suffixInflection('こよう', 'くる', [], ['vk']),
                 suffixInflection('来よう', '来る', [], ['vk']),
                 suffixInflection('來よう', '來る', [], ['vk']),
-                suffixInflection('ましょう', 'ます', [], ['-masu']),
+                suffixInflection('ましょう', 'ます', ['-mashou'], ['-masu']),
                 suffixInflection('かろう', 'い', [], ['adj-i']),
             ],
         },
@@ -1537,6 +1541,13 @@ export const japaneseTransforms = {
                 suffixInflection('へんかった', 'なかった', ['past'], ['past']),
                 suffixInflection('ひんかった', 'なかった', ['past'], ['past']),
                 suffixInflection('うてへん', 'ってない', [], ['adj-i']),
+            ],
+        },
+        'kansai-ben volitional': {
+            name: 'kansai-ben',
+            description: 'volitional form of kansai-ben verbs',
+            rules: [
+                suffixInflection('まひょ', 'ましょう', [], ['-mashou']),
             ],
         },
         'kansai-ben -te': {
