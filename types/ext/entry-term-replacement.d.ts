@@ -15,9 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+export type Rule = {
+    pattern: string;
+    ignoreCase: boolean;
+}
+
 export type EntryTermReplacementMap = {
-    global: RegExp[];
+    global: Rule[];
     dictionaries: {
-        [key: string]: RegExp[];
+        [key: string]: Rule[];
     };
 }

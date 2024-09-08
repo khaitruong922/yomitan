@@ -79,7 +79,7 @@ export class DisplayGenerator {
         const definitionsContainer = this._querySelector(node, '.definition-list');
         const headwordTagsContainer = this._querySelector(node, '.headword-list-tag-list');
 
-        const {headwords, type, inflectionRuleChainCandidates, definitions, frequencies, pronunciations, termReplacementPatterns} = dictionaryEntry;
+        const {headwords, type, inflectionRuleChainCandidates, definitions, frequencies, pronunciations, termReplacementRules} = dictionaryEntry;
         const groupedPronunciations = getGroupedPronunciations(dictionaryEntry);
         const pronunciationCount = groupedPronunciations.reduce((i, v) => i + v.pronunciations.length, 0);
         const groupedFrequencies = groupTermFrequencies(dictionaryEntry);
@@ -146,7 +146,7 @@ export class DisplayGenerator {
                 dictionaryTag.content = [dictionary];
             }
 
-            const node2 = this._createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings, termReplacementPatterns);
+            const node2 = this._createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings, termReplacementRules);
             node2.dataset.index = `${i}`;
             definitionsContainer.appendChild(node2);
         }
@@ -424,10 +424,10 @@ export class DisplayGenerator {
      * @param {import('dictionary').TermHeadword[]} headwords
      * @param {Set<string>} uniqueTerms
      * @param {Set<string>} uniqueReadings
-     * @param {RegExp[]} termReplacementPatterns
+     * @param {import('entry-term-replacement.js').Rule[]} termReplacementRules
      * @returns {HTMLElement}
      */
-    _createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings, termReplacementPatterns) {
+    _createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings, termReplacementRules) {
         const {dictionary, tags, headwordIndices, entries} = definition;
         const disambiguations = getDisambiguations(headwords, headwordIndices, uniqueTerms, uniqueReadings);
         const term = headwords[headwordIndices[0]].term;
@@ -440,7 +440,8 @@ export class DisplayGenerator {
 
         node.dataset.dictionary = dictionary;
 
-        const termReplacedEntries = entries.map(entry => this.replaceTermGlossary(entry, term, termReplacementPatterns));
+        const termReplacementPatterns = this._createTermPatterns(termReplacementRules);
+        const termReplacedEntries = entries.map(entry => this._replaceTermGlossary(entry, term, termReplacementPatterns));
         this._appendMultiple(tagListContainer, this._createTag.bind(this), [...tags, dictionaryTag]);
         this._appendMultiple(onlyListContainer, this._createTermDisambiguation.bind(this), disambiguations);
         this._appendMultiple(entriesContainer, this._createTermDefinitionEntry.bind(this), termReplacedEntries, dictionary);
@@ -474,17 +475,34 @@ export class DisplayGenerator {
     }
 
     /**
+     * @param {import('entry-term-replacement.js').Rule[]} termReplacementRules
+     * @returns {RegExp[]}
+     */
+    _createTermPatterns(termReplacementRules) {
+        /** @type {RegExp[]} */
+        const patterns = [];
+        for (const {pattern, ignoreCase} of termReplacementRules) {
+            let patternRegExp;
+            try {
+                patternRegExp = new RegExp(pattern, ignoreCase ? 'gi' : 'g');
+            } catch (e) {
+                return [];
+            }
+            patterns.push(patternRegExp);
+        }
+        return patterns;
+    }
+
+    /**
      * @param {import('dictionary-data').TermGlossaryContent} entry
      * @param {string} term
      * @param {RegExp[]} termReplacementPatterns
      * @returns {import('dictionary-data').TermGlossaryContent}
      */
-    replaceTermGlossary(entry, term, termReplacementPatterns) {
-        console.log(termReplacementPatterns);
+    _replaceTermGlossary(entry, term, termReplacementPatterns) {
         if (termReplacementPatterns.length === 0) {
             return entry;
         }
-        console.log(entry);
         switch (typeof entry) {
             case 'string':
                 for (const pattern of termReplacementPatterns) {
@@ -496,7 +514,7 @@ export class DisplayGenerator {
                     case 'image':
                         return entry;
                     case 'structured-content':
-                        entry.content = this.replaceTermStructuredContent(entry.content, term, termReplacementPatterns);
+                        entry.content = this._replaceTermStructuredContent(entry.content, term, termReplacementPatterns);
                         return entry;
                     case 'text':
                         for (const pattern of termReplacementPatterns) {
@@ -514,7 +532,7 @@ export class DisplayGenerator {
      * @param {RegExp[]} termReplacementPatterns
      * @returns {import('structured-content').Content}
      */
-    replaceTermStructuredContent(content, term, termReplacementPatterns) {
+    _replaceTermStructuredContent(content, term, termReplacementPatterns) {
         if (typeof content === 'string') {
             for (const pattern of termReplacementPatterns) {
                 content = applyTextReplacement(content, pattern, term);
@@ -522,7 +540,7 @@ export class DisplayGenerator {
             return content;
         }
         if (Array.isArray(content)) {
-            return content.map(entry => this.replaceTermStructuredContent(entry, term, termReplacementPatterns));
+            return content.map(entry => this._replaceTermStructuredContent(entry, term, termReplacementPatterns));
         }
         return content;
     }

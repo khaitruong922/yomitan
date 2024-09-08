@@ -2478,7 +2478,7 @@ export class Backend {
         const textReplacements = this._getTranslatorTextReplacements(textReplacementsOptions);
         let excludeDictionaryDefinitions = null;
         const termReplacementMap = this.getEntryTermReplacementMap(options.entryTermReplacement);
-        const termReplacementPatterns = this.getDictionaryReplacementPatterns(termReplacementMap, mainDictionary);
+        const termReplacementRules = this.getDictionaryTermReplacementRules(termReplacementMap, mainDictionary);
         if (mode === 'merge' && !enabledDictionaryMap.has(mainDictionary)) {
             enabledDictionaryMap.set(mainDictionary, {
                 index: enabledDictionaryMap.size,
@@ -2487,7 +2487,7 @@ export class Backend {
                 allowSecondarySearches: false,
                 partsOfSpeechFilter: true,
                 useDeinflections: true,
-                termReplacementPatterns
+                termReplacementRules,
             });
             excludeDictionaryDefinitions = new Set();
             excludeDictionaryDefinitions.add(mainDictionary);
@@ -2529,6 +2529,8 @@ export class Backend {
         for (const dictionary of options.dictionaries) {
             if (!dictionary.enabled) { continue; }
             const {name, alias, priority, allowSecondarySearches, partsOfSpeechFilter, useDeinflections} = dictionary;
+            const termReplacementMap = this.getEntryTermReplacementMap(options.entryTermReplacement);
+            const termReplacementRules = this.getDictionaryTermReplacementRules(termReplacementMap, name);
             enabledDictionaryMap.set(name, {
                 index: enabledDictionaryMap.size,
                 alias,
@@ -2536,6 +2538,7 @@ export class Backend {
                 allowSecondarySearches,
                 partsOfSpeechFilter,
                 useDeinflections,
+                termReplacementRules,
             });
         }
         return enabledDictionaryMap;
@@ -2585,42 +2588,29 @@ export class Backend {
             {pattern: '━', ignoreCase: false, dictionary: null},
         ]) {
            const {pattern, ignoreCase, dictionary} = group
-            let patternRegExp;
-            try {
-                patternRegExp = new RegExp(pattern, ignoreCase ? 'gi' : 'g');
-            } catch (e) {
-                return {
-                    global: [],
-                    dictionaries: {},
-                };
-            }
-            if (dictionary) {
+            if (dictionary !== null) {
                 if (!patterns.dictionaries[dictionary]) {
                     patterns.dictionaries[dictionary] = []
                 }
-                patterns.dictionaries[dictionary].push(patternRegExp);
+                patterns.dictionaries[dictionary].push({pattern, ignoreCase});
             } else {
-                patterns.global.push(patternRegExp);
+                patterns.global.push({pattern, ignoreCase});
             }
         }
-        console.log(patterns);
+        console.log("patterns", patterns);
         return patterns;
     }
 
     /**
-     * @param {?(import('entry-term-replacement.js').EntryTermReplacementMap)} entryTermReplacementMap
+     * @param {import('entry-term-replacement.js').EntryTermReplacementMap} entryTermReplacementMap
      * @param {string} dictionary
-     * @returns {RegExp[]}
+     * @returns {import('entry-term-replacement.js').Rule[]}
      */
-    getDictionaryReplacementPatterns(entryTermReplacementMap, dictionary) {
-        if (!entryTermReplacementMap) {
-            return [];
-        }
+    getDictionaryTermReplacementRules(entryTermReplacementMap, dictionary) {
         const globalPatterns = entryTermReplacementMap.global;
         const dictionaryPatterns = entryTermReplacementMap.dictionaries[dictionary] ?? [];
         return [...globalPatterns, ...dictionaryPatterns];
     }
-
 
     /**
      * @returns {Promise<void>}

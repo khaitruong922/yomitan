@@ -17,6 +17,7 @@
  */
 
 import type * as DictionaryData from './dictionary-data';
+import type * as EntryTermReplacement from './entry-term-replacement';
 
 // Common
 
@@ -268,9 +269,9 @@ export type TermDictionaryEntry = {
      */
     frequencies: TermFrequency[];
     /**
-     * Term replacement patterns
-    */
-    termReplacementPatterns: RegExp[];
+     * Term replacement rules for the entry.
+     */
+    termReplacementRules: EntryTermReplacement.Rule[];
 };
 
 export type InflectionRuleChainCandidate = {

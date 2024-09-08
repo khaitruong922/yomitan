@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import {Rule} from 'entry-term-replacement';
 import type * as Dictionary from './dictionary';
 import type {SearchResolution} from 'settings';
 
@@ -167,7 +168,7 @@ export type FindTermDictionary = {
     /**
      * Whether to use the inflections from this dictionary.
      */
-    termReplacementPatterns: RegExp[];
+    termReplacementRules: Rule[];
 };
 
 export type TermEnabledDictionaryMap = Map<string, FindTermDictionary>;

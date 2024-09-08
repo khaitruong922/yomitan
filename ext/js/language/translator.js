@@ -1469,11 +1469,11 @@ export class Translator {
     /**
      * @param {string} dictionary
      * @param {import('translation').TermEnabledDictionaryMap} enabledDictionaryMap
-     * @returns {RegExp[]}
+     * @returns {import('entry-term-replacement.js').Rule[]}
      */
-    _getDictionaryTermReplacementPatterns(dictionary, enabledDictionaryMap) {
+    _getDictionaryTermReplacementRules(dictionary, enabledDictionaryMap) {
         const info = enabledDictionaryMap.get(dictionary);
-        return info?.termReplacementPatterns ?? [];
+        return info?.termReplacementRules ?? [];
     }
 
     /**
@@ -1681,10 +1681,10 @@ export class Translator {
      * @param {number} maxOriginalTextLength
      * @param {import('dictionary').TermHeadword[]} headwords
      * @param {import('dictionary').TermDefinition[]} definitions
-     * @param {RegExp[]} termReplacementPatterns
+     * @param {import('entry-term-replacement.js').Rule[]} termReplacementRules
      * @returns {import('translation-internal').TermDictionaryEntry}
      */
-    _createTermDictionaryEntry(isPrimary, textProcessorRuleChainCandidates, inflectionRuleChainCandidates, score, dictionaryIndex, dictionaryAlias, dictionaryPriority, sourceTermExactMatchCount, maxOriginalTextLength, headwords, definitions, termReplacementPatterns) {
+    _createTermDictionaryEntry(isPrimary, textProcessorRuleChainCandidates, inflectionRuleChainCandidates, score, dictionaryIndex, dictionaryAlias, dictionaryPriority, sourceTermExactMatchCount, maxOriginalTextLength, headwords, definitions, termReplacementRules) {
         return {
             type: 'term',
             isPrimary,
@@ -1701,7 +1701,7 @@ export class Translator {
             definitions,
             pronunciations: [],
             frequencies: [],
-            termReplacementPatterns,
+            termReplacementRules,
         };
     }
 
@@ -1737,7 +1737,7 @@ export class Translator {
         const reading = (rawReading.length > 0 ? rawReading : term);
         const {index: dictionaryIndex, priority: dictionaryPriority} = this._getDictionaryOrder(dictionary, enabledDictionaryMap);
         const dictionaryAlias = this._getDictionaryAlias(dictionary, enabledDictionaryMap);
-        const termReplacementPatterns = this._getDictionaryTermReplacementPatterns(dictionary, enabledDictionaryMap);
+        const termReplacementRules = this._getDictionaryTermReplacementRules(dictionary, enabledDictionaryMap);
         const sourceTermExactMatchCount = (isPrimary && deinflectedText === term ? 1 : 0);
         const source = this._createSource(originalText, transformedText, deinflectedText, matchType, matchSource, isPrimary);
         const maxOriginalTextLength = originalText.length;
@@ -1763,7 +1763,7 @@ export class Translator {
             maxOriginalTextLength,
             [this._createTermHeadword(0, term, reading, [source], headwordTagGroups, rules)],
             [this._createTermDefinition(0, [0], dictionary, dictionaryIndex, dictionaryAlias, dictionaryPriority, id, score, [sequence], isPrimary, definitionTagGroups, contentDefinitions)],
-            termReplacementPatterns,
+            termReplacementRules,
         );
     }
 
@@ -1855,7 +1855,7 @@ export class Translator {
             maxOriginalTextLength,
             headwordsArray,
             definitions,
-            [],
+            [], // TODO: termReplacementRules
         );
     }
 
