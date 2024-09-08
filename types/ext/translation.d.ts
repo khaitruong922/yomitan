@@ -164,6 +164,10 @@ export type FindTermDictionary = {
      * Whether to use the deinflections from this dictionary.
      */
     useDeinflections: boolean;
+    /**
+     * Whether to use the inflections from this dictionary.
+     */
+    termReplacementPatterns: RegExp[];
 };
 
 export type TermEnabledDictionaryMap = Map<string, FindTermDictionary>;

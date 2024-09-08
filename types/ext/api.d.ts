@@ -25,6 +25,7 @@ import type * as Dictionary from './dictionary';
 import type * as DictionaryDatabase from './dictionary-database';
 import type * as DictionaryImporter from './dictionary-importer';
 import type * as Environment from './environment';
+import type * as EntryTermReplacement from './entry-term-replacement';
 import type * as Extension from './extension';
 import type * as Language from './language';
 import type * as Log from './log';
@@ -389,6 +390,12 @@ type ApiSurface = {
         params: void;
         return: Language.LanguageSummary[];
     };
+    getEntryTermReplacements: {
+        params: {
+            optionsContext: Settings.OptionsContext;
+        };
+        return: EntryTermReplacement.EntryTermReplacementMap | null;
+    }
 };
 
 type ApiExtraArgs = [sender: chrome.runtime.MessageSender];

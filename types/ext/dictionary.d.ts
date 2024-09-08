@@ -267,6 +267,10 @@ export type TermDictionaryEntry = {
      * Frequencies for the entry.
      */
     frequencies: TermFrequency[];
+    /**
+     * Term replacement patterns
+    */
+    termReplacementPatterns: RegExp[];
 };
 
 export type InflectionRuleChainCandidate = {

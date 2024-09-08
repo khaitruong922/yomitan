@@ -186,6 +186,7 @@ export class Backend {
             ['findAnkiNotes',                this._onApiFindAnkiNotes.bind(this)],
             ['openCrossFramePort',           this._onApiOpenCrossFramePort.bind(this)],
             ['getLanguageSummaries',         this._onApiGetLanguageSummaries.bind(this)],
+            ['getEntryTermReplacements',    this._onApiGetEntryTermReplacements.bind(this)],
         ]);
         /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -968,6 +969,13 @@ export class Backend {
     /** @type {import('api').ApiHandler<'getLanguageSummaries'>} */
     _onApiGetLanguageSummaries() {
         return getLanguageSummaries();
+    }
+
+    /** @type {import('api').ApiHandler<'getEntryTermReplacements'>} */
+    _onApiGetEntryTermReplacements({optionsContext}) {
+        const options = this._getProfileOptions(optionsContext, false);
+        const {entryTermReplacement} = options;
+        return this.getEntryTermReplacementMap(entryTermReplacement);
     }
 
     // Command handlers
@@ -2469,6 +2477,8 @@ export class Backend {
         } = options;
         const textReplacements = this._getTranslatorTextReplacements(textReplacementsOptions);
         let excludeDictionaryDefinitions = null;
+        const termReplacementMap = this.getEntryTermReplacementMap(options.entryTermReplacement);
+        const termReplacementPatterns = this.getDictionaryReplacementPatterns(termReplacementMap, mainDictionary);
         if (mode === 'merge' && !enabledDictionaryMap.has(mainDictionary)) {
             enabledDictionaryMap.set(mainDictionary, {
                 index: enabledDictionaryMap.size,
@@ -2477,6 +2487,7 @@ export class Backend {
                 allowSecondarySearches: false,
                 partsOfSpeechFilter: true,
                 useDeinflections: true,
+                termReplacementPatterns
             });
             excludeDictionaryDefinitions = new Set();
             excludeDictionaryDefinitions.add(mainDictionary);
@@ -2559,6 +2570,49 @@ export class Backend {
         }
         return textReplacements;
     }
+
+    /**
+     * @param {import('settings').EntryTermReplacementOptions} entryTermReplacementOptions
+     * @returns {?(import('entry-term-replacement.js').EntryTermReplacementMap)}
+     */
+    getEntryTermReplacementMap(entryTermReplacementOptions) {
+        /** @type {(import('entry-term-replacement.js').EntryTermReplacementMap)} */
+        const patterns = {
+            global: [],
+            dictionaries: {},
+        };
+        for (const group of entryTermReplacementOptions.groups) {
+           const {pattern, ignoreCase, dictionary} = group
+            let patternRegExp;
+            try {
+                patternRegExp = new RegExp(pattern, ignoreCase ? 'gi' : 'g');
+            } catch (e) {
+                return null;
+            }
+            if (dictionary) {
+                if (!patterns.dictionaries[dictionary]) {
+                    patterns.dictionaries[dictionary] = []
+                }
+                patterns.dictionaries[dictionary].push(patternRegExp);
+            } else {
+                patterns.global.push(patternRegExp);
+            }
+        }
+        return patterns;
+    }
+
+    /**
+     * @param {?(import('entry-term-replacement.js').EntryTermReplacementMap)} entryTermReplacementMap
+     * @param {string} dictionary
+     * @returns {RegExp[]}
+     */
+    getDictionaryReplacementPatterns(entryTermReplacementMap, dictionary) {
+        if (!entryTermReplacementMap) {
+            return [];
+        }
+        return entryTermReplacementMap.dictionaries[dictionary];
+    }
+
 
     /**
      * @returns {Promise<void>}

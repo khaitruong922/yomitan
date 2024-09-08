@@ -19,6 +19,7 @@
 import {ExtensionError} from '../core/extension-error.js';
 import {getDisambiguations, getGroupedPronunciations, getTermFrequency, groupKanjiFrequencies, groupTermFrequencies, groupTermTags, isNonNounVerbOrAdjective} from '../dictionary/dictionary-data-util.js';
 import {HtmlTemplateCollection} from '../dom/html-template-collection.js';
+import {applyTextReplacement} from '../general/regex-util.js';
 import {distributeFurigana, getKanaMorae, getPitchCategory, isCodePointKanji} from '../language/ja/japanese.js';
 import {getLanguageFromText} from '../language/text-utilities.js';
 import {createPronunciationDownstepPosition, createPronunciationGraph, createPronunciationText} from './pronunciation-generator.js';
@@ -78,7 +79,7 @@ export class DisplayGenerator {
         const definitionsContainer = this._querySelector(node, '.definition-list');
         const headwordTagsContainer = this._querySelector(node, '.headword-list-tag-list');
 
-        const {headwords, type, inflectionRuleChainCandidates, definitions, frequencies, pronunciations} = dictionaryEntry;
+        const {headwords, type, inflectionRuleChainCandidates, definitions, frequencies, pronunciations, termReplacementPatterns} = dictionaryEntry;
         const groupedPronunciations = getGroupedPronunciations(dictionaryEntry);
         const pronunciationCount = groupedPronunciations.reduce((i, v) => i + v.pronunciations.length, 0);
         const groupedFrequencies = groupTermFrequencies(dictionaryEntry);
@@ -145,7 +146,7 @@ export class DisplayGenerator {
                 dictionaryTag.content = [dictionary];
             }
 
-            const node2 = this._createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings);
+            const node2 = this._createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings, termReplacementPatterns);
             node2.dataset.index = `${i}`;
             definitionsContainer.appendChild(node2);
         }
@@ -423,11 +424,13 @@ export class DisplayGenerator {
      * @param {import('dictionary').TermHeadword[]} headwords
      * @param {Set<string>} uniqueTerms
      * @param {Set<string>} uniqueReadings
+     * @param {RegExp[]} termReplacementPatterns
      * @returns {HTMLElement}
      */
-    _createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings) {
+    _createTermDefinition(definition, dictionaryTag, headwords, uniqueTerms, uniqueReadings, termReplacementPatterns) {
         const {dictionary, tags, headwordIndices, entries} = definition;
         const disambiguations = getDisambiguations(headwords, headwordIndices, uniqueTerms, uniqueReadings);
+        const term = headwords[headwordIndices[0]].term;
 
         const node = this._instantiate('definition-item');
 
@@ -439,19 +442,27 @@ export class DisplayGenerator {
 
         this._appendMultiple(tagListContainer, this._createTag.bind(this), [...tags, dictionaryTag]);
         this._appendMultiple(onlyListContainer, this._createTermDisambiguation.bind(this), disambiguations);
-        this._appendMultiple(entriesContainer, this._createTermDefinitionEntry.bind(this), entries, dictionary);
+        this._appendMultiple(entriesContainer, this._createTermDefinitionEntry.bind(this), entries, {
+            dictionary,
+            term,
+            termReplacementPatterns,
+        });
 
         return node;
     }
 
     /**
      * @param {import('dictionary-data').TermGlossaryContent} entry
-     * @param {string} dictionary
+     * @param {{dictionary: string, term: string, termReplacementPatterns: RegExp[]}} params
      * @returns {?HTMLElement}
      */
-    _createTermDefinitionEntry(entry, dictionary) {
+    _createTermDefinitionEntry(entry, params) {
+        const {dictionary, term, termReplacementPatterns} = params;
         switch (typeof entry) {
             case 'string':
+                for (const pattern of termReplacementPatterns) {
+                    entry = applyTextReplacement(entry, pattern, term);
+                }
                 return this._createTermDefinitionEntryText(entry);
             case 'object': {
                 switch (entry.type) {

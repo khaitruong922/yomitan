@@ -97,6 +97,7 @@ export type ProfileOptions = {
     inputs: InputsOptions;
     clipboard: ClipboardOptions;
     accessibility: AccessibilityOptions;
+    entryTermReplacement: EntryTermReplacementOptions;
 };
 
 export type GeneralOptions = {
@@ -258,6 +259,16 @@ export type TranslationTextReplacementGroup = {
     pattern: string;
     ignoreCase: boolean;
     replacement: string;
+};
+
+export type EntryTermReplacementOptions = {
+    groups: EntryTermReplacementGroup[];
+};
+
+export type EntryTermReplacementGroup = {
+    pattern: string;
+    ignoreCase: boolean;
+    dictionary: string | null;
 };
 
 export type DictionariesOptions = DictionaryOptions[];
