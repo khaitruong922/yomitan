@@ -2573,7 +2573,7 @@ export class Backend {
 
     /**
      * @param {import('settings').EntryTermReplacementOptions} entryTermReplacementOptions
-     * @returns {?(import('entry-term-replacement.js').EntryTermReplacementMap)}
+     * @returns {import('entry-term-replacement.js').EntryTermReplacementMap}
      */
     getEntryTermReplacementMap(entryTermReplacementOptions) {
         /** @type {(import('entry-term-replacement.js').EntryTermReplacementMap)} */
@@ -2581,13 +2581,18 @@ export class Backend {
             global: [],
             dictionaries: {},
         };
-        for (const group of entryTermReplacementOptions.groups) {
+        for (const group of entryTermReplacementOptions?.groups ?? [
+            {pattern: '━', ignoreCase: false, dictionary: null},
+        ]) {
            const {pattern, ignoreCase, dictionary} = group
             let patternRegExp;
             try {
                 patternRegExp = new RegExp(pattern, ignoreCase ? 'gi' : 'g');
             } catch (e) {
-                return null;
+                return {
+                    global: [],
+                    dictionaries: {},
+                };
             }
             if (dictionary) {
                 if (!patterns.dictionaries[dictionary]) {
@@ -2598,6 +2603,7 @@ export class Backend {
                 patterns.global.push(patternRegExp);
             }
         }
+        console.log(patterns);
         return patterns;
     }
 
@@ -2610,7 +2616,9 @@ export class Backend {
         if (!entryTermReplacementMap) {
             return [];
         }
-        return entryTermReplacementMap.dictionaries[dictionary];
+        const globalPatterns = entryTermReplacementMap.global;
+        const dictionaryPatterns = entryTermReplacementMap.dictionaries[dictionary] ?? [];
+        return [...globalPatterns, ...dictionaryPatterns];
     }
 
 

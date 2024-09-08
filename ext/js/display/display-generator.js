@@ -440,29 +440,22 @@ export class DisplayGenerator {
 
         node.dataset.dictionary = dictionary;
 
+        const termReplacedEntries = entries.map(entry => this.replaceTermGlossary(entry, term, termReplacementPatterns));
         this._appendMultiple(tagListContainer, this._createTag.bind(this), [...tags, dictionaryTag]);
         this._appendMultiple(onlyListContainer, this._createTermDisambiguation.bind(this), disambiguations);
-        this._appendMultiple(entriesContainer, this._createTermDefinitionEntry.bind(this), entries, {
-            dictionary,
-            term,
-            termReplacementPatterns,
-        });
+        this._appendMultiple(entriesContainer, this._createTermDefinitionEntry.bind(this), termReplacedEntries, dictionary);
 
         return node;
     }
 
     /**
      * @param {import('dictionary-data').TermGlossaryContent} entry
-     * @param {{dictionary: string, term: string, termReplacementPatterns: RegExp[]}} params
+     * @param {string} dictionary
      * @returns {?HTMLElement}
      */
-    _createTermDefinitionEntry(entry, params) {
-        const {dictionary, term, termReplacementPatterns} = params;
+    _createTermDefinitionEntry(entry, dictionary) {
         switch (typeof entry) {
             case 'string':
-                for (const pattern of termReplacementPatterns) {
-                    entry = applyTextReplacement(entry, pattern, term);
-                }
                 return this._createTermDefinitionEntryText(entry);
             case 'object': {
                 switch (entry.type) {
@@ -478,6 +471,60 @@ export class DisplayGenerator {
         }
 
         return null;
+    }
+
+    /**
+     * @param {import('dictionary-data').TermGlossaryContent} entry
+     * @param {string} term
+     * @param {RegExp[]} termReplacementPatterns
+     * @returns {import('dictionary-data').TermGlossaryContent}
+     */
+    replaceTermGlossary(entry, term, termReplacementPatterns) {
+        console.log(termReplacementPatterns);
+        if (termReplacementPatterns.length === 0) {
+            return entry;
+        }
+        console.log(entry);
+        switch (typeof entry) {
+            case 'string':
+                for (const pattern of termReplacementPatterns) {
+                    entry = applyTextReplacement(entry, pattern, term);
+                }
+                return entry;
+            case 'object': {
+                switch (entry.type) {
+                    case 'image':
+                        return entry;
+                    case 'structured-content':
+                        entry.content = this.replaceTermStructuredContent(entry.content, term, termReplacementPatterns);
+                        return entry;
+                    case 'text':
+                        for (const pattern of termReplacementPatterns) {
+                            entry.text = applyTextReplacement(entry.text, pattern, term);
+                        }
+                        return entry;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param {import('structured-content').Content} content
+     * @param {string} term
+     * @param {RegExp[]} termReplacementPatterns
+     * @returns {import('structured-content').Content}
+     */
+    replaceTermStructuredContent(content, term, termReplacementPatterns) {
+        if (typeof content === 'string') {
+            for (const pattern of termReplacementPatterns) {
+                content = applyTextReplacement(content, pattern, term);
+            }
+            return content;
+        }
+        if (Array.isArray(content)) {
+            return content.map(entry => this.replaceTermStructuredContent(entry, term, termReplacementPatterns));
+        }
+        return content;
     }
 
     /**
