@@ -279,6 +279,7 @@ describe('japanese language transformer', () => {
             '思はれる',
             '思ひます',
             '思はう',
+            '思ひさう',
         ];
 
         const basicTransformations = [...adjectiveInflections, ...verbInflections, ...inflectionCombinations];
